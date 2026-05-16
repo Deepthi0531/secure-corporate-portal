@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Blog</title>
+</head>
+<body>
+
+<h1>Employee Blog</h1>
+
+<a href="/create">Create New Post</a>
+
+<hr>
+
+{% for post in posts %}
+
+<h2>{{ post[1] }}</h2>
+
+<p>{{ post[2] }}</p>
+
+<hr>
+
+{% endfor %}
+
+</body>
+</html>
