@@ -122,14 +122,22 @@ def upload_file():
     return redirect('/documents')
 
 @app.route('/documents')
-@login_required # Secured!
+@login_required 
 def documents():
     response = s3.list_objects_v2(Bucket=S3_BUCKET)
     files = []
     if 'Contents' in response:
         for obj in response['Contents']:
             filename = obj['Key']
-            url = f"https://{S3_BUCKET}.s3.amazonaws.com/{filename}"
+            
+            # --- THE SECURITY FIX: Generate a Pre-Signed URL ---
+            # This URL will grant temporary access for 1 hour (3600 seconds)
+            url = s3.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': S3_BUCKET, 'Key': filename},
+                ExpiresIn=3600
+            )
+            
             files.append({
                 'name': filename,
                 'url': url
