@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .stat-box { display: inline-block; width: 45%; background: #e9ecef; padding: 20px; margin: 10px 1.5%; border-radius: 8px; text-align: center; box-sizing: border-box; }
+        .stat-box h3 { margin: 0 0 10px 0; color: #333; }
+        .stat-box p { font-size: 28px; font-weight: bold; color: #0056b3; margin: 0; }
+        .nav-links { margin-top: 30px; text-align: center; padding: 15px; background: #f8f9fa; border-radius: 5px;}
+        .nav-links a { margin: 0 15px; text-decoration: none; color: #0056b3; font-weight: bold; }
+        .logout-btn { display: block; width: 120px; margin: 30px auto 10px; text-align: center; padding: 10px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 style="text-align: center;">Secure Corporate Dashboard</h2>
+        <hr>
+        
+        <div class="stat-box">
+            <h3>Total Blog Posts</h3>
+            <p>{{ total_posts }}</p>
+        </div>
+        
+        <div class="stat-box">
+            <h3>Total Documents</h3>
+            <p>{{ total_files }}</p>
+        </div>
+
+        <div class="nav-links">
+            <a href="/">View Blog</a> | 
+            <a href="/create">Create Post</a> | 
+            <a href="/documents">View Documents</a> | 
+            <a href="/upload-page">Upload File</a>
+        </div>
+
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+</body>
+</html>
