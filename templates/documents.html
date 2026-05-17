@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Documents</title>
+</head>
+<body>
+
+<h2>Uploaded Documents</h2>
+
+<ul>
+{% for file in files %}
+    <li>
+        <a href="{{ file.url }}">{{ file.name }}</a>
+    </li>
+{% endfor %}
+</ul>
+
+</body>
+</html>
