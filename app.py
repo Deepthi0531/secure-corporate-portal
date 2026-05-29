@@ -26,14 +26,18 @@ def load_user(user_id):
     return None
 
 # --- DATABASE & S3 SETUP ---
-db = pymysql.connect(
-    host="portal-db.cg58646wiyye.us-east-1.rds.amazonaws.com",
-    user="admin",
-    password="Ankitha2005", # Note: In production, never hardcode passwords!
-    database="portal_db"
-)
+def get_db_connection():
+    return pymysql.connect(
+        host="portal-db.cg58646wiyye.us-east-1.rds.amazonaws.com",
+        user="admin",
+        password="Ankitha2005",
+        database="portal_db",
+        autocommit=True
+    )
 
+db = get_db_connection()
 cursor = db.cursor()
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -41,7 +45,6 @@ CREATE TABLE IF NOT EXISTS posts (
     content TEXT
 )
 """)
-db.commit()
 
 S3_BUCKET="corp-portal-documents-ananya"
 s3=boto3.client('s3')
@@ -90,20 +93,35 @@ def admin_dashboard():
 # --- BLOG ROUTES (MEMBER 2) ---
 @app.route('/')
 def home():
+    db = get_db_connection()
+    cursor = db.cursor()
+
     cursor.execute("SELECT * FROM posts")
     posts = cursor.fetchall()
+
+    db.close()
+
     return render_template('blog.html', posts=posts)
 
 @app.route('/create', methods=['GET', 'POST'])
-@login_required # Secured!
+@login_required
 def create_post():
+
     if request.method == 'POST':
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
         title = request.form['title']
         content = request.form['content']
+
         sql = "INSERT INTO posts(title, content) VALUES(%s, %s)"
         cursor.execute(sql, (title, content))
-        db.commit()
+
+        db.close()
+
         return redirect('/')
+
     return render_template('create_post.html')
 
 
