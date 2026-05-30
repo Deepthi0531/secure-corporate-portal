@@ -4,15 +4,13 @@ import boto3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
-# Flask-Login requires a secret key to sign session cookies securely
 app.secret_key = 'super_secret_corporate_key' 
 
 # --- FLASK LOGIN SETUP ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login' # Redirects users here if they try to access protected pages
+login_manager.login_view = 'login'
 
-# Simple User class for Flask-Login
 class User(UserMixin):
     def __init__(self, id):
         self.id = id
@@ -33,7 +31,7 @@ def get_db_connection():
         autocommit=True
     )
 
-# Run standard schema migration safely inside a temporary context wrapper
+# Safely run initialization tables
 try:
     init_db = get_db_connection()
     init_cursor = init_db.cursor()
@@ -46,24 +44,23 @@ try:
     """)
     init_db.close()
 except Exception as e:
-    print(f"Database setup warning: {e}")
+    print(f"Database init warning: {e}")
 
 S3_BUCKET = "corp-portal-documents-ananya"
 s3 = boto3.client('s3')
 
 
-# --- AUTHENTICATION ROUTES (MEMBER 4) ---
+# --- AUTHENTICATION ROUTES ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         
-        # Simple security check for our admin user
         if username == 'admin' and password == 'admin123':
             user = User(id="admin")
             login_user(user)
-            return redirect('/')
+            return redirect(url_for('home'))
         else:
             return "Invalid credentials. Please try again."
             
@@ -73,14 +70,14 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 
-# --- CORE DASHBOARD ENVIRONMENT ---
+# --- CORE DASHBOARD SYSTEM ---
 @app.route('/')
 @login_required
 def home():
-    # 1. Count total blog posts safely using a short-lived execution block
+    # 1. Fetch live total count from RDS
     try:
         db = get_db_connection()
         cursor = db.cursor()
@@ -90,34 +87,35 @@ def home():
     except Exception as e:
         total_posts = 0
 
-    # 2. Count total files uploaded to S3
+    # 2. Fetch live total files from S3
     try:
         response = s3.list_objects_v2(Bucket=S3_BUCKET)
         total_docs = len(response.get('Contents', []))
     except Exception as e:
         total_docs = 0 
 
-    # Renders the clean dashboard design interface with current data metrics
+    # FIXED: Renders 'dashboard.html' natively to resolve your TemplateNotFound error
     return render_template('dashboard.html', total_posts=total_posts, total_docs=total_docs)
 
 
-# --- BLOG ROUTES (MEMBER 2) ---
+# --- BLOG ROUTES ---
 @app.route('/blog')
 @login_required
 def view_blog():
     try:
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT * FROM posts")
+        cursor.execute("SELECT id, title, content FROM posts")
         posts = cursor.fetchall()
         db.close()
     except Exception as e:
         posts = []
 
-    # Map database row tuples into structured list arrays for the design layout
+    # Map raw database rows cleanly into object models for frontend rendering
     formatted_posts = []
     for post in posts:
         formatted_posts.append({
+            'id': post[0],
             'title': post[1],
             'content': post[2]
         })
@@ -138,14 +136,14 @@ def create_post():
             cursor.execute(sql, (title, content))
             db.close()
         except Exception as e:
-            print(f"Error saving entry: {e}")
+            print(f"Error publishing post: {e}")
 
-        return redirect('/blog')
+        return redirect(url_for('view_blog'))
 
     return render_template('create_post.html')
 
 
-# --- DOCUMENT ROUTES (MEMBER 3) ---
+# --- DOCUMENT ROUTES ---
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload_file():
@@ -153,12 +151,12 @@ def upload_file():
         file = request.files['file']
         if file and file.filename != '':
             s3.upload_fileobj(file, S3_BUCKET, file.filename)
-            return redirect('/documents')
+            return redirect(url_for('view_documents'))
     return render_template('upload.html')
 
 @app.route('/documents')
 @login_required 
-def documents():
+def view_documents():
     try:
         response = s3.list_objects_v2(Bucket=S3_BUCKET)
     except Exception as e:
@@ -169,7 +167,7 @@ def documents():
         for obj in response['Contents']:
             filename = obj['Key']
             
-            # Generate pre-signed security delivery URL
+            # Generate pre-signed URL download string
             url = s3.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': S3_BUCKET, 'Key': filename},
@@ -180,6 +178,8 @@ def documents():
                 'name': filename,
                 'url': url
             })
+            
+    # FIXED: This now properly renders documents.html instead of looping back to upload.html
     return render_template('documents.html', files=files)
 
 
