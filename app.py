@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, url_for, flash
 import pymysql
 import boto3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -19,8 +19,6 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    # For now, we are using a simple hardcoded admin. 
-    # In a real app, you would query the RDS database here.
     if user_id == "admin":
         return User(id="admin")
     return None
@@ -35,19 +33,23 @@ def get_db_connection():
         autocommit=True
     )
 
-db = get_db_connection()
-cursor = db.cursor()
+# Run standard schema migration safely inside a temporary context wrapper
+try:
+    init_db = get_db_connection()
+    init_cursor = init_db.cursor()
+    init_cursor.execute("""
+    CREATE TABLE IF NOT EXISTS posts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255),
+        content TEXT
+    )
+    """)
+    init_db.close()
+except Exception as e:
+    print(f"Database setup warning: {e}")
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS posts (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255),
-    content TEXT
-)
-""")
-
-S3_BUCKET="corp-portal-documents-ananya"
-s3=boto3.client('s3')
+S3_BUCKET = "corp-portal-documents-ananya"
+s3 = boto3.client('s3')
 
 
 # --- AUTHENTICATION ROUTES (MEMBER 4) ---
@@ -61,7 +63,7 @@ def login():
         if username == 'admin' and password == 'admin123':
             user = User(id="admin")
             login_user(user)
-            return redirect('/admin')
+            return redirect('/')
         else:
             return "Invalid credentials. Please try again."
             
@@ -73,83 +75,101 @@ def logout():
     logout_user()
     return redirect('/login')
 
-@app.route('/admin')
+
+# --- CORE DASHBOARD ENVIRONMENT ---
+@app.route('/')
 @login_required
-def admin_dashboard():
-    # 1. Count total blog posts from RDS
-    cursor.execute("SELECT COUNT(*) FROM posts")
-    total_posts = cursor.fetchone()[0]
+def home():
+    # 1. Count total blog posts safely using a short-lived execution block
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM posts")
+        total_posts = cursor.fetchone()[0]
+        db.close()
+    except Exception as e:
+        total_posts = 0
 
     # 2. Count total files uploaded to S3
     try:
         response = s3.list_objects_v2(Bucket=S3_BUCKET)
-        total_files = len(response.get('Contents', []))
+        total_docs = len(response.get('Contents', []))
     except Exception as e:
-        total_files = 0 # If bucket is empty or errors out
+        total_docs = 0 
 
-    return render_template('admin_dashboard.html', total_posts=total_posts, total_files=total_files)
+    # Renders the clean dashboard design interface with current data metrics
+    return render_template('dashboard.html', total_posts=total_posts, total_docs=total_docs)
 
 
 # --- BLOG ROUTES (MEMBER 2) ---
-@app.route('/')
-def home():
-    db = get_db_connection()
-    cursor = db.cursor()
+@app.route('/blog')
+@login_required
+def view_blog():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM posts")
+        posts = cursor.fetchall()
+        db.close()
+    except Exception as e:
+        posts = []
 
-    cursor.execute("SELECT * FROM posts")
-    posts = cursor.fetchall()
+    # Map database row tuples into structured list arrays for the design layout
+    formatted_posts = []
+    for post in posts:
+        formatted_posts.append({
+            'title': post[1],
+            'content': post[2]
+        })
 
-    db.close()
-
-    return render_template('blog.html', posts=posts)
+    return render_template('blog.html', posts=formatted_posts)
 
 @app.route('/create', methods=['GET', 'POST'])
 @login_required
 def create_post():
-
     if request.method == 'POST':
+        try:
+            db = get_db_connection()
+            cursor = db.cursor()
+            title = request.form['title']
+            content = request.form['content']
 
-        db = get_db_connection()
-        cursor = db.cursor()
+            sql = "INSERT INTO posts(title, content) VALUES(%s, %s)"
+            cursor.execute(sql, (title, content))
+            db.close()
+        except Exception as e:
+            print(f"Error saving entry: {e}")
 
-        title = request.form['title']
-        content = request.form['content']
-
-        sql = "INSERT INTO posts(title, content) VALUES(%s, %s)"
-        cursor.execute(sql, (title, content))
-
-        db.close()
-
-        return redirect('/')
+        return redirect('/blog')
 
     return render_template('create_post.html')
 
 
 # --- DOCUMENT ROUTES (MEMBER 3) ---
-@app.route('/upload-page')
-@login_required # Secured!
-def upload_page():
-    return render_template('upload.html')
-
-@app.route('/upload', methods=['POST'])
-@login_required # Secured!
+@app.route('/upload', methods=['GET', 'POST'])
+@login_required
 def upload_file():
-    file = request.files['file']
-    if file:
-        s3.upload_fileobj(file, S3_BUCKET, file.filename)
-    return redirect('/documents')
+    if request.method == 'POST':
+        file = request.files['file']
+        if file and file.filename != '':
+            s3.upload_fileobj(file, S3_BUCKET, file.filename)
+            return redirect('/documents')
+    return render_template('upload.html')
 
 @app.route('/documents')
 @login_required 
 def documents():
-    response = s3.list_objects_v2(Bucket=S3_BUCKET)
+    try:
+        response = s3.list_objects_v2(Bucket=S3_BUCKET)
+    except Exception as e:
+        response = {}
+
     files = []
     if 'Contents' in response:
         for obj in response['Contents']:
             filename = obj['Key']
             
-            # --- THE SECURITY FIX: Generate a Pre-Signed URL ---
-            # This URL will grant temporary access for 1 hour (3600 seconds)
+            # Generate pre-signed security delivery URL
             url = s3.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': S3_BUCKET, 'Key': filename},
