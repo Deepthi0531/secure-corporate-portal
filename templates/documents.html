@@ -1,19 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Documents</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Documents</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
+<body class="relative min-h-screen bg-slate-900 font-sans text-slate-100 antialiased">
+    <div class="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center opacity-25 blur-sm"></div>
 
-<h2>Uploaded Documents</h2>
+    <div class="relative z-10 max-w-4xl mx-auto px-4 py-12">
+        <div class="flex justify-between items-center mb-10">
+            <a href="/" class="text-sm font-medium text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700 px-4 py-2 rounded-lg transition-all shadow-md">
+                ← Back to Dashboard
+            </a>
+            <a href="/upload" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-lg transition-all shadow-indigo-900/20">
+                + Upload New File
+            </a>
+        </div>
 
-<ul>
-{% for file in files %}
-    <li>
-        <a href="{{ file.url }}">{{ file.name }}</a>
-    </li>
-{% endfor %}
-</ul>
+        <h1 class="text-4xl font-extrabold tracking-tight text-white mb-8 border-b border-slate-700 pb-4">Uploaded Documents</h1>
 
+        <div class="bg-slate-800/60 backdrop-blur-md border border-slate-700/50 rounded-xl divide-y divide-slate-700/60 shadow-xl overflow-hidden">
+            <div class="p-4 flex justify-between items-center hover:bg-slate-700/20 transition-colors">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl text-indigo-400">📄</span>
+                    <span class="font-medium text-slate-200">Assignment 1.pptx</span>
+                </div>
+                <a href="#" class="text-sm font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg border border-blue-500/20 transition-all">
+                    Download File
+                </a>
+            </div>
+
+            <div class="p-4 flex justify-between items-center hover:bg-slate-700/20 transition-colors">
+                <div class="flex items-center space-x-3">
+                    <span class="text-2xl text-indigo-400">📄</span>
+                    <span class="font-medium text-slate-200">new.txt</span>
+                </div>
+                <a href="#" class="text-sm font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 px-3 py-1.5 rounded-lg border border-blue-500/20 transition-all">
+                    Download File
+                </a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
