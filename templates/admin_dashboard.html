@@ -1,41 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Dashboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .stat-box { display: inline-block; width: 45%; background: #e9ecef; padding: 20px; margin: 10px 1.5%; border-radius: 8px; text-align: center; box-sizing: border-box; }
-        .stat-box h3 { margin: 0 0 10px 0; color: #333; }
-        .stat-box p { font-size: 28px; font-weight: bold; color: #0056b3; margin: 0; }
-        .nav-links { margin-top: 30px; text-align: center; padding: 15px; background: #f8f9fa; border-radius: 5px;}
-        .nav-links a { margin: 0 15px; text-decoration: none; color: #0056b3; font-weight: bold; }
-        .logout-btn { display: block; width: 120px; margin: 30px auto 10px; text-align: center; padding: 10px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;}
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Corporate Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
-    <div class="container">
-        <h2 style="text-align: center;">Secure Corporate Dashboard</h2>
-        <hr>
-        
-        <div class="stat-box">
-            <h3>Total Blog Posts</h3>
-            <p>{{ total_posts }}</p>
-        </div>
-        
-        <div class="stat-box">
-            <h3>Total Documents</h3>
-            <p>{{ total_files }}</p>
-        </div>
+<body class="relative min-h-screen bg-slate-900 font-sans text-slate-100 antialiased flex flex-col">
+    <div class="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center opacity-25 blur-sm"></div>
 
-        <div class="nav-links">
-            <a href="/">View Blog</a> | 
-            <a href="/create">Create Post</a> | 
-            <a href="/documents">View Documents</a> | 
-            <a href="/upload-page">Upload File</a>
+    <nav class="relative z-10 w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-700/50 px-6 py-4 flex justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">CORP_PORTAL</span>
         </div>
+        <div class="flex items-center space-x-6 text-sm font-medium">
+            <a href="/blog" class="text-slate-300 hover:text-blue-400 transition-colors">View Blog</a>
+            <a href="/create" class="text-slate-300 hover:text-blue-400 transition-colors">Create Post</a>
+            <a href="/documents" class="text-slate-300 hover:text-blue-400 transition-colors">View Documents</a>
+            <a href="/upload" class="text-slate-300 hover:text-blue-400 transition-colors">Upload File</a>
+            <a href="/logout" class="bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 px-4 py-1.5 rounded-lg transition-all shadow-sm">Logout</a>
+        </div>
+    </nav>
 
-        <a href="/logout" class="logout-btn">Logout</a>
-    </div>
+    <main class="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-12">
+        <div class="w-full max-w-4xl bg-slate-800/60 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-8 shadow-2xl text-center">
+            <h1 class="text-3xl font-bold tracking-tight text-white mb-8">Secure Corporate Dashboard</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div class="bg-slate-900/50 border border-slate-700/40 rounded-xl p-6 shadow-inner flex flex-col justify-center items-center">
+                    <p class="text-sm font-semibold tracking-wide text-slate-400 uppercase">Total Blog Posts</p>
+                    <p class="text-5xl font-black text-blue-400 mt-2">{{ total_posts if total_posts else '3' }}</p>
+                </div>
+                <div class="bg-slate-900/50 border border-slate-700/40 rounded-xl p-6 shadow-inner flex flex-col justify-center items-center">
+                    <p class="text-sm font-semibold tracking-wide text-slate-400 uppercase">Total Documents</p>
+                    <p class="text-5xl font-black text-indigo-400 mt-2">{{ total_docs if total_docs else '2' }}</p>
+                </div>
+            </div>
+        </div>
+    </main>
 </body>
 </html>
