@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for
 import pymysql
 import boto3
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_corporate_key' 
@@ -31,7 +31,7 @@ def get_db_connection():
         autocommit=True
     )
 
-# Safely run initialization tables
+# Database table initialization
 try:
     init_db = get_db_connection()
     init_cursor = init_db.cursor()
@@ -44,11 +44,10 @@ try:
     """)
     init_db.close()
 except Exception as e:
-    print(f"Database init warning: {e}")
+    print(f"Database connection setup fallback trace: {e}")
 
 S3_BUCKET = "corp-portal-documents-ananya"
 s3 = boto3.client('s3')
-
 
 # --- AUTHENTICATION ROUTES ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -56,14 +55,12 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
         if username == 'admin' and password == 'admin123':
             user = User(id="admin")
             login_user(user)
             return redirect(url_for('home'))
         else:
             return "Invalid credentials. Please try again."
-            
     return render_template('login.html')
 
 @app.route('/logout')
@@ -72,31 +69,26 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-
 # --- CORE DASHBOARD SYSTEM ---
 @app.route('/')
 @login_required
 def home():
-    # 1. Fetch live total count from RDS
     try:
         db = get_db_connection()
         cursor = db.cursor()
         cursor.execute("SELECT COUNT(*) FROM posts")
         total_posts = cursor.fetchone()[0]
         db.close()
-    except Exception as e:
+    except Exception:
         total_posts = 0
 
-    # 2. Fetch live total files from S3
     try:
         response = s3.list_objects_v2(Bucket=S3_BUCKET)
         total_docs = len(response.get('Contents', []))
-    except Exception as e:
+    except Exception:
         total_docs = 0 
 
-    # FIXED: Renders 'dashboard.html' natively to resolve your TemplateNotFound error
     return render_template('dashboard.html', total_posts=total_posts, total_docs=total_docs)
-
 
 # --- BLOG ROUTES ---
 @app.route('/blog')
@@ -105,13 +97,12 @@ def view_blog():
     try:
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT id, title, content FROM posts")
+        cursor.execute("SELECT id, title, content FROM posts ORDER BY id DESC")
         posts = cursor.fetchall()
         db.close()
-    except Exception as e:
+    except Exception:
         posts = []
 
-    # Map raw database rows cleanly into object models for frontend rendering
     formatted_posts = []
     for post in posts:
         formatted_posts.append({
@@ -119,7 +110,6 @@ def view_blog():
             'title': post[1],
             'content': post[2]
         })
-
     return render_template('blog.html', posts=formatted_posts)
 
 @app.route('/create', methods=['GET', 'POST'])
@@ -131,17 +121,12 @@ def create_post():
             cursor = db.cursor()
             title = request.form['title']
             content = request.form['content']
-
-            sql = "INSERT INTO posts(title, content) VALUES(%s, %s)"
-            cursor.execute(sql, (title, content))
+            cursor.execute("INSERT INTO posts(title, content) VALUES(%s, %s)", (title, content))
             db.close()
         except Exception as e:
-            print(f"Error publishing post: {e}")
-
+            print(f"Error publishing post entry: {e}")
         return redirect(url_for('view_blog'))
-
     return render_template('create_post.html')
-
 
 # --- DOCUMENT ROUTES ---
 @app.route('/upload', methods=['GET', 'POST'])
@@ -159,29 +144,21 @@ def upload_file():
 def view_documents():
     try:
         response = s3.list_objects_v2(Bucket=S3_BUCKET)
-    except Exception as e:
+    except Exception:
         response = {}
 
     files = []
     if 'Contents' in response:
         for obj in response['Contents']:
             filename = obj['Key']
-            
-            # Generate pre-signed URL download string
             url = s3.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': S3_BUCKET, 'Key': filename},
                 ExpiresIn=3600
             )
+            files.append({'name': filename, 'url': url})
             
-            files.append({
-                'name': filename,
-                'url': url
-            })
-            
-    # FIXED: This now properly renders documents.html instead of looping back to upload.html
     return render_template('documents.html', files=files)
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
