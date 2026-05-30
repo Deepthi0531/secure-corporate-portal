@@ -159,6 +159,19 @@ def view_documents():
             files.append({'name': filename, 'url': url})
             
     return render_template('documents.html', files=files)
+# --- TEMPORARY CLEANUP ROUTE ---
+@app.route('/delete-test-blogs-secret')
+@login_required
+def delete_test_blogs():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        # This deletes ALL posts from the table
+        cursor.execute("TRUNCATE TABLE posts")
+        db.close()
+        return "<h1>Success! All testing blogs have been permanently deleted.</h1><p><a href='/blog'>Go back to Blog</a></p>"
+    except Exception as e:
+        return f"<h1>Error clearing database:</h1><p>{e}</p>"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
