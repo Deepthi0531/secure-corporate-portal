@@ -1,25 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Blog</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
+<body class="relative min-h-screen bg-slate-900 font-sans text-slate-100 antialiased">
+    <div class="absolute inset-0 z-0 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center opacity-25 blur-sm"></div>
 
-<h1>Employee Blog</h1>
+    <div class="relative z-10 max-w-4xl mx-auto px-4 py-12">
+        <div class="flex justify-between items-center mb-10">
+            <a href="/" class="flex items-center space-x-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700 px-4 py-2 rounded-lg transition-all shadow-md">
+                <span>← Back to Dashboard</span>
+            </a>
+            <a href="/create" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-lg transition-all shadow-blue-900/20">
+                + Create New Post
+            </a>
+        </div>
 
-<a href="/create">Create New Post</a>
+        <h1 class="text-4xl font-extrabold tracking-tight text-white mb-8 border-b border-slate-700 pb-4">Employee Blog</h1>
 
-<hr>
+        <div class="space-y-6">
+            <article class="bg-slate-800/70 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-xl hover:border-slate-600 transition-all">
+                <h2 class="text-2xl font-bold text-blue-400 mb-2">Team Meeting Update</h2>
+                <p class="text-slate-300 leading-relaxed">The development team meeting is scheduled for Monday at 10 AM in the conference hall.</p>
+            </article>
 
-{% for post in posts %}
+            <article class="bg-slate-800/70 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-xl hover:border-slate-600 transition-all">
+                <h2 class="text-2xl font-bold text-blue-400 mb-2">Team colab</h2>
+                <p class="text-slate-300 leading-relaxed">A collaboration with foreign branch for upcoming project.</p>
+            </article>
 
-<h2>{{ post[1] }}</h2>
-
-<p>{{ post[2] }}</p>
-
-<hr>
-
-{% endfor %}
-
+            <article class="bg-slate-800/70 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 shadow-xl hover:border-slate-600 transition-all">
+                <h2 class="text-2xl font-bold text-blue-400 mb-2">Gang</h2>
+                <p class="text-slate-300 leading-relaxed">Super star</p>
+            </article>
+        </div>
+    </div>
 </body>
 </html>
